@@ -6,32 +6,24 @@ const DEG2RAD = (PI / 180.0);
 const RAD2DEG = (180.0 / PI);
 
 pub fn main() !void {
-    // const allocator = std.heap.c_allocator;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
+    _ = allocator;
 
     {
-        // Test
-        var mylist = std.ArrayList(u8).init(allocator);
-        defer mylist.deinit();
-        try mylist.appendSlice("Hello, World!\n");
-        std.debug.print("mylist: {s}", .{mylist.items});
 
         // ---- WINDOW SETUP ----
         const screenWidth = 1280;
         const screenHeight = 720;
 
-        // DPI Scaling
         rl.setConfigFlags(.{
             .window_highdpi = true,
             .vsync_hint = true,
             .msaa_4x_hint = true,
         });
-        // rl.setTargetFPS(60);
 
         rl.initWindow(screenWidth, screenHeight, "Controfast");
         defer rl.closeWindow();
-
         // ---- END WINDOW SETUP ----
 
         // ---- TEXTURES ----
@@ -62,7 +54,6 @@ pub fn main() !void {
             mouse_pos = rl.getMousePosition().multiply(rl.getWindowScaleDPI());
 
             // ---- UPDATE ----
-
             // Controller Input
             var movement_vector = rl.Vector2.init(
                 rl.getGamepadAxisMovement(0, .left_x),
@@ -80,7 +71,6 @@ pub fn main() !void {
                 player_angle = std.math.atan2(movement_vector.y, movement_vector.x) * RAD2DEG;
                 player_angle += 90.0;
             }
-
             // ---- END UPDATE ----
 
             // --- DRAW ---
@@ -102,6 +92,7 @@ pub fn main() !void {
                 player_angle,
                 rl.Color.white,
             );
+
             // --- UI ---
             rl.drawFPS(10, 10);
 
