@@ -34,6 +34,8 @@ pub fn main() !void {
         rl.unloadImage(img_player01);
         // ---- END TEXTURES ----
 
+        // Gamepad
+        const gamepad_id = 0;
         // Controller Deadzones
         const leftStickDeadzoneX = 0.1;
         const leftStickDeadzoneY = 0.1;
@@ -42,13 +44,15 @@ pub fn main() !void {
         // const leftTriggerDeadzone = -0.9;
         const rightTriggerDeadzone = -0.9;
 
+        var trigger_right_pressed = false;
+
         var prev_loop_time = rl.getTime();
         var mouse_pos = rl.Vector2.init(0, 0);
+
+        // Player
         var player_pos = rl.Vector2.init(100, 100);
         const player_jump_distance = 200.0;
         var player_angle: f32 = 0.0;
-
-        var trigger_right_pressed = false;
 
         // Main game loop
         while (!rl.windowShouldClose()) { // Detect window close button or ESC key
@@ -60,8 +64,8 @@ pub fn main() !void {
             // Controller Input
             // Left Stick
             var movement_vector = rl.Vector2.init(
-                rl.getGamepadAxisMovement(0, .left_x),
-                rl.getGamepadAxisMovement(0, .left_y),
+                rl.getGamepadAxisMovement(gamepad_id, .left_x),
+                rl.getGamepadAxisMovement(gamepad_id, .left_y),
             );
             if (movement_vector.x > -leftStickDeadzoneX and movement_vector.x < leftStickDeadzoneX) {
                 movement_vector.x = 0.0;
@@ -90,7 +94,7 @@ pub fn main() !void {
                 player_angle += 90.0;
             }
             // Right Trigger
-            var trigger_right = rl.getGamepadAxisMovement(0, .right_trigger);
+            var trigger_right = rl.getGamepadAxisMovement(gamepad_id, .right_trigger);
             if (trigger_right < rightTriggerDeadzone) {
                 trigger_right = -1.0;
             }
@@ -129,6 +133,10 @@ pub fn main() !void {
 
             // --- UI ---
             rl.drawFPS(10, 10);
+
+            if (!rl.isGamepadAvailable(gamepad_id) and rl.getTime() > 2.0) {
+                rl.drawText("No gamepad detected", 120, 10, 20, rl.Color.red);
+            }
 
             // Wayland bug
             // Window is larger than set
