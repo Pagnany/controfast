@@ -51,7 +51,10 @@ pub fn main() !void {
 
         // Player
         var player_pos = rl.Vector2.init(100, 100);
-        const player_jump_distance = 200.0;
+        var player_velocity = rl.Vector2.init(0, 0);
+        const player_move_accel = 15000.0;
+        const player_dash_power = 5000.0;
+        const player_friction = 15;
         var player_angle: f32 = 0.0;
 
         // Main game loop
@@ -62,7 +65,7 @@ pub fn main() !void {
 
             // ---- UPDATE ----
             // Controller Input
-            // Left Stick
+            // Left Stick : Player Movement
             var movement_vector = rl.Vector2.init(
                 rl.getGamepadAxisMovement(gamepad_id, .left_x),
                 rl.getGamepadAxisMovement(gamepad_id, .left_y),
@@ -74,40 +77,45 @@ pub fn main() !void {
                 movement_vector.y = 0.0;
             }
             if (movement_vector.x != 0.0 or movement_vector.y != 0.0) {
-                player_pos.x += movement_vector.x * delta_time * 700.0;
-                if (player_pos.x < 15) {
-                    player_pos.x = 15;
-                }
-                if (player_pos.x > screenWidth - 15) {
-                    player_pos.x = screenWidth - 15;
-                }
-
-                player_pos.y += movement_vector.y * delta_time * 700.0;
-                if (player_pos.y < 15) {
-                    player_pos.y = 15;
-                }
-                if (player_pos.y > screenHeight - 15) {
-                    player_pos.y = screenHeight - 15;
-                }
+                player_velocity.x += movement_vector.x * player_move_accel * delta_time;
+                player_velocity.y += movement_vector.y * player_move_accel * delta_time;
 
                 player_angle = std.math.atan2(movement_vector.y, movement_vector.x) * RAD2DEG;
-                player_angle += 90.0;
             }
-            // Right Trigger
+            // Right Trigger : Player Dash
             var trigger_right = rl.getGamepadAxisMovement(gamepad_id, .right_trigger);
             if (trigger_right < rightTriggerDeadzone) {
                 trigger_right = -1.0;
             }
             if (!trigger_right_pressed and trigger_right > 0.7) {
                 trigger_right_pressed = true;
-                const angle_rad = (player_angle - 90.0) * DEG2RAD;
-                const jump_vec = rl.Vector2.init(
-                    @cos(angle_rad) * player_jump_distance,
-                    @sin(angle_rad) * player_jump_distance,
-                );
-                player_pos = player_pos.add(jump_vec);
+                player_velocity.x = player_dash_power * @cos(player_angle * DEG2RAD);
+                player_velocity.y = player_dash_power * @sin(player_angle * DEG2RAD);
             } else if (trigger_right_pressed and trigger_right < -0.5) {
                 trigger_right_pressed = false;
+            }
+
+            // Player velocity
+            player_pos.x += player_velocity.x * delta_time;
+            player_pos.y += player_velocity.y * delta_time;
+            // std.debug.print("Player velocity: {d} {d}\n", .{ player_velocity.x, player_velocity.y });
+
+            // Player friction
+            player_velocity.x -= player_velocity.x * player_friction * delta_time;
+            player_velocity.y -= player_velocity.y * player_friction * delta_time;
+
+            // Player out of bounds
+            if (player_pos.x < 15) {
+                player_pos.x = 15;
+            }
+            if (player_pos.x > screenWidth - 15) {
+                player_pos.x = screenWidth - 15;
+            }
+            if (player_pos.y < 15) {
+                player_pos.y = 15;
+            }
+            if (player_pos.y > screenHeight - 15) {
+                player_pos.y = screenHeight - 15;
             }
             // ---- END UPDATE ----
 
@@ -127,7 +135,7 @@ pub fn main() !void {
                     30,
                 ),
                 rl.Vector2.init(15, 15),
-                player_angle,
+                player_angle + 90.0,
                 rl.Color.white,
             );
 
