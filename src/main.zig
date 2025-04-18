@@ -125,6 +125,8 @@ pub fn main() !void {
             rl.clearBackground(rl.Color.dark_gray);
 
             // player01
+            const temp_color = if (player_velocity.length() > 1100.0) rl.Color.red else rl.Color.white;
+
             rl.drawTexturePro(
                 texture_player01,
                 rl.Rectangle.init(0, 0, 30, 30),
@@ -136,7 +138,7 @@ pub fn main() !void {
                 ),
                 rl.Vector2.init(15, 15),
                 player_angle + 90.0,
-                rl.Color.white,
+                temp_color,
             );
 
             // --- UI ---
