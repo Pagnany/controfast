@@ -1,7 +1,7 @@
 const rl = @import("raylib");
 const std = @import("std");
 
-const PI = 3.14159265358979323846;
+const PI = std.math.pi;
 const DEG2RAD = (PI / 180.0);
 const RAD2DEG = (180.0 / PI);
 
@@ -13,8 +13,8 @@ pub fn main() !void {
     {
 
         // ---- WINDOW SETUP ----
-        const screenWidth = 1280;
-        const screenHeight = 720;
+        const screenWidth = 1920;
+        const screenHeight = 1080;
 
         rl.setConfigFlags(.{
             .window_highdpi = true,
@@ -34,18 +34,21 @@ pub fn main() !void {
         rl.unloadImage(img_player01);
         // ---- END TEXTURES ----
 
-        // Set axis deadzones
+        // Controller Deadzones
         const leftStickDeadzoneX = 0.1;
         const leftStickDeadzoneY = 0.1;
         // const rightStickDeadzoneX = 0.1;
         // const rightStickDeadzoneY = 0.1;
         // const leftTriggerDeadzone = -0.9;
-        // const rightTriggerDeadzone = -0.9;
+        const rightTriggerDeadzone = -0.9;
 
         var prev_loop_time = rl.getTime();
         var mouse_pos = rl.Vector2.init(0, 0);
         var player_pos = rl.Vector2.init(100, 100);
+        const player_jump_distance = 200.0;
         var player_angle: f32 = 0.0;
+
+        var trigger_right_pressed = false;
 
         // Main game loop
         while (!rl.windowShouldClose()) { // Detect window close button or ESC key
@@ -55,6 +58,7 @@ pub fn main() !void {
 
             // ---- UPDATE ----
             // Controller Input
+            // Left Stick
             var movement_vector = rl.Vector2.init(
                 rl.getGamepadAxisMovement(0, .left_x),
                 rl.getGamepadAxisMovement(0, .left_y),
@@ -67,9 +71,39 @@ pub fn main() !void {
             }
             if (movement_vector.x != 0.0 or movement_vector.y != 0.0) {
                 player_pos.x += movement_vector.x * delta_time * 700.0;
+                if (player_pos.x < 15) {
+                    player_pos.x = 15;
+                }
+                if (player_pos.x > screenWidth - 15) {
+                    player_pos.x = screenWidth - 15;
+                }
+
                 player_pos.y += movement_vector.y * delta_time * 700.0;
+                if (player_pos.y < 15) {
+                    player_pos.y = 15;
+                }
+                if (player_pos.y > screenHeight - 15) {
+                    player_pos.y = screenHeight - 15;
+                }
+
                 player_angle = std.math.atan2(movement_vector.y, movement_vector.x) * RAD2DEG;
                 player_angle += 90.0;
+            }
+            // Right Trigger
+            var trigger_right = rl.getGamepadAxisMovement(0, .right_trigger);
+            if (trigger_right < rightTriggerDeadzone) {
+                trigger_right = -1.0;
+            }
+            if (!trigger_right_pressed and trigger_right > 0.7) {
+                trigger_right_pressed = true;
+                const angle_rad = (player_angle - 90.0) * DEG2RAD;
+                const jump_vec = rl.Vector2.init(
+                    @cos(angle_rad) * player_jump_distance,
+                    @sin(angle_rad) * player_jump_distance,
+                );
+                player_pos = player_pos.add(jump_vec);
+            } else if (trigger_right_pressed and trigger_right < -0.5) {
+                trigger_right_pressed = false;
             }
             // ---- END UPDATE ----
 
