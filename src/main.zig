@@ -7,6 +7,7 @@ const RAD2DEG = (180.0 / PI);
 
 const Player = struct {
     pos: rl.Vector2,
+    size: rl.Vector2,
     velocity: rl.Vector2,
     angle: f32,
     move_accel: f32,
@@ -72,6 +73,7 @@ pub fn main() !void {
         // Player
         var player = Player{
             .pos = rl.Vector2.init(screenWidth / 2, screenHeight / 2),
+            .size = rl.Vector2.init(30, 30),
             .velocity = rl.Vector2.init(0, 0),
             .angle = 270.0,
             .move_accel = 15000.0,
@@ -135,17 +137,21 @@ pub fn main() !void {
             player.velocity.y -= player.velocity.y * player.friction * delta_time;
 
             // Player out of bounds
-            if (player.pos.x < 15) {
-                player.pos.x = 15;
+            if (player.pos.x < player.size.x / 2) {
+                player.pos.x = player.size.x / 2;
             }
-            if (player.pos.x > screenWidth - 15) {
-                player.pos.x = screenWidth - 15;
+            if (player.pos.x > screenWidth - player.size.x / 2) {
+                player.pos.x = screenWidth - player.size.x / 2;
             }
-            if (player.pos.y < 15) {
-                player.pos.y = 15;
+            if (player.pos.y < player.size.y / 2) {
+                player.pos.y = player.size.y / 2;
             }
-            if (player.pos.y > screenHeight - 15) {
-                player.pos.y = screenHeight - 15;
+            if (player.pos.y > screenHeight - player.size.y / 2) {
+                player.pos.y = screenHeight - player.size.y / 2;
+            }
+
+            if (check_obstacle_collision(player.pos, player.size, obstacles)) {
+                std.debug.print("Collision detected!\n", .{});
             }
             // ---- END UPDATE ----
 
@@ -156,7 +162,6 @@ pub fn main() !void {
 
             // player01
             const temp_color = if (player.velocity.length() > 1100.0) rl.Color.red else rl.Color.white;
-
             rl.drawTexturePro(
                 texture_player01,
                 rl.Rectangle.init(0, 0, 30, 30),
@@ -236,4 +241,32 @@ fn create_random_obstacles(
         };
         try array.append(temp_obstacle);
     }
+}
+
+fn check_obstacle_collision(
+    player_pos: rl.Vector2,
+    player_size: rl.Vector2,
+    obstacles: std.ArrayList(Obstacle),
+) bool {
+    for (obstacles.items) |obstacle| {
+        if (check_collision_circle_rect(player_pos, player_size.x, obstacle.pos, obstacle.size)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+pub fn check_collision_circle_rect(
+    circle_pos: rl.Vector2,
+    circle_radius: f32,
+    rect_pos: rl.Vector2,
+    rect_size: rl.Vector2,
+) bool {
+    const closestX = std.math.clamp(circle_pos.x, rect_pos.x, rect_pos.x + rect_size.x);
+    const closestY = std.math.clamp(circle_pos.y, rect_pos.y, rect_pos.y + rect_size.y);
+
+    const dx = circle_pos.x - closestX;
+    const dy = circle_pos.y - closestY;
+
+    return (dx * dx + dy * dy) <= (circle_radius * circle_radius);
 }
