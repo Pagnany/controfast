@@ -5,6 +5,15 @@ const PI = std.math.pi;
 const DEG2RAD = (PI / 180.0);
 const RAD2DEG = (180.0 / PI);
 
+const Player = struct {
+    pos: rl.Vector2,
+    velocity: rl.Vector2,
+    angle: f32,
+    move_accel: f32,
+    dash_power: f32,
+    friction: f32,
+};
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -36,7 +45,7 @@ pub fn main() !void {
 
         // Gamepad
         const gamepad_id = 0;
-        // Controller Deadzones
+        // Gamepad Deadzones
         const leftStickDeadzoneX = 0.1;
         const leftStickDeadzoneY = 0.1;
         // const rightStickDeadzoneX = 0.1;
@@ -50,12 +59,14 @@ pub fn main() !void {
         var mouse_pos = rl.Vector2.init(0, 0);
 
         // Player
-        var player_pos = rl.Vector2.init(100, 100);
-        var player_velocity = rl.Vector2.init(0, 0);
-        const player_move_accel = 15000.0;
-        const player_dash_power = 5000.0;
-        const player_friction = 15;
-        var player_angle: f32 = 0.0;
+        var player = Player{
+            .pos = rl.Vector2.init(100, 100),
+            .velocity = rl.Vector2.init(0, 0),
+            .angle = 0.0,
+            .move_accel = 15000.0,
+            .dash_power = 5000.0,
+            .friction = 15.0,
+        };
 
         // Main game loop
         while (!rl.windowShouldClose()) { // Detect window close button or ESC key
@@ -77,10 +88,10 @@ pub fn main() !void {
                 movement_vector.y = 0.0;
             }
             if (movement_vector.x != 0.0 or movement_vector.y != 0.0) {
-                player_velocity.x += movement_vector.x * player_move_accel * delta_time;
-                player_velocity.y += movement_vector.y * player_move_accel * delta_time;
+                player.velocity.x += movement_vector.x * player.move_accel * delta_time;
+                player.velocity.y += movement_vector.y * player.move_accel * delta_time;
 
-                player_angle = std.math.atan2(movement_vector.y, movement_vector.x) * RAD2DEG;
+                player.angle = std.math.atan2(movement_vector.y, movement_vector.x) * RAD2DEG;
             }
             // Right Trigger : Player Dash
             var trigger_right = rl.getGamepadAxisMovement(gamepad_id, .right_trigger);
@@ -89,33 +100,33 @@ pub fn main() !void {
             }
             if (!trigger_right_pressed and trigger_right > 0.7) {
                 trigger_right_pressed = true;
-                player_velocity.x = player_dash_power * @cos(player_angle * DEG2RAD);
-                player_velocity.y = player_dash_power * @sin(player_angle * DEG2RAD);
+                player.velocity.x = player.dash_power * @cos(player.angle * DEG2RAD);
+                player.velocity.y = player.dash_power * @sin(player.angle * DEG2RAD);
             } else if (trigger_right_pressed and trigger_right < -0.5) {
                 trigger_right_pressed = false;
             }
 
             // Player velocity
-            player_pos.x += player_velocity.x * delta_time;
-            player_pos.y += player_velocity.y * delta_time;
+            player.pos.x += player.velocity.x * delta_time;
+            player.pos.y += player.velocity.y * delta_time;
             // std.debug.print("Player velocity: {d} {d}\n", .{ player_velocity.x, player_velocity.y });
 
             // Player friction
-            player_velocity.x -= player_velocity.x * player_friction * delta_time;
-            player_velocity.y -= player_velocity.y * player_friction * delta_time;
+            player.velocity.x -= player.velocity.x * player.friction * delta_time;
+            player.velocity.y -= player.velocity.y * player.friction * delta_time;
 
             // Player out of bounds
-            if (player_pos.x < 15) {
-                player_pos.x = 15;
+            if (player.pos.x < 15) {
+                player.pos.x = 15;
             }
-            if (player_pos.x > screenWidth - 15) {
-                player_pos.x = screenWidth - 15;
+            if (player.pos.x > screenWidth - 15) {
+                player.pos.x = screenWidth - 15;
             }
-            if (player_pos.y < 15) {
-                player_pos.y = 15;
+            if (player.pos.y < 15) {
+                player.pos.y = 15;
             }
-            if (player_pos.y > screenHeight - 15) {
-                player_pos.y = screenHeight - 15;
+            if (player.pos.y > screenHeight - 15) {
+                player.pos.y = screenHeight - 15;
             }
             // ---- END UPDATE ----
 
@@ -125,19 +136,19 @@ pub fn main() !void {
             rl.clearBackground(rl.Color.dark_gray);
 
             // player01
-            const temp_color = if (player_velocity.length() > 1100.0) rl.Color.red else rl.Color.white;
+            const temp_color = if (player.velocity.length() > 1100.0) rl.Color.red else rl.Color.white;
 
             rl.drawTexturePro(
                 texture_player01,
                 rl.Rectangle.init(0, 0, 30, 30),
                 rl.Rectangle.init(
-                    player_pos.x,
-                    player_pos.y,
+                    player.pos.x,
+                    player.pos.y,
                     30,
                     30,
                 ),
                 rl.Vector2.init(15, 15),
-                player_angle + 90.0,
+                player.angle + 90.0,
                 temp_color,
             );
 
