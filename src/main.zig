@@ -14,12 +14,23 @@ const Player = struct {
     friction: f32,
 };
 
+const Obstacle = struct {
+    pos: rl.Vector2,
+    size: rl.Vector2,
+};
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    _ = allocator;
 
     {
+        // Random number generator
+        var prng = std.Random.DefaultPrng.init(blk: {
+            var seed: u64 = undefined;
+            try std.posix.getrandom(std.mem.asBytes(&seed));
+            break :blk seed;
+        });
+        const rand = prng.random();
 
         // ---- WINDOW SETUP ----
         const screenWidth = 1920;
@@ -60,13 +71,17 @@ pub fn main() !void {
 
         // Player
         var player = Player{
-            .pos = rl.Vector2.init(100, 100),
+            .pos = rl.Vector2.init(screenWidth / 2, screenHeight / 2),
             .velocity = rl.Vector2.init(0, 0),
-            .angle = 0.0,
+            .angle = 270.0,
             .move_accel = 15000.0,
             .dash_power = 5000.0,
             .friction = 15.0,
         };
+
+        var obstacles = std.ArrayList(Obstacle).init(allocator);
+        defer obstacles.deinit();
+        try create_random_obstacles(&obstacles, rand, 30, screenWidth, screenHeight);
 
         // Main game loop
         while (!rl.windowShouldClose()) { // Detect window close button or ESC key
@@ -104,6 +119,10 @@ pub fn main() !void {
                 player.velocity.y = player.dash_power * @sin(player.angle * DEG2RAD);
             } else if (trigger_right_pressed and trigger_right < -0.5) {
                 trigger_right_pressed = false;
+            }
+            // Facebutton
+            if (rl.isGamepadButtonPressed(gamepad_id, .right_face_down)) {
+                try create_random_obstacles(&obstacles, rand, 30, screenWidth, screenHeight);
             }
 
             // Player velocity
@@ -152,6 +171,15 @@ pub fn main() !void {
                 temp_color,
             );
 
+            // Obstacles draw
+            for (obstacles.items) |obstacle| {
+                rl.drawRectangleV(
+                    obstacle.pos,
+                    obstacle.size,
+                    rl.Color.blue,
+                );
+            }
+
             // --- UI ---
             rl.drawFPS(10, 10);
 
@@ -179,5 +207,33 @@ pub fn main() !void {
         std.debug.print("Memory leak detected!\n", .{});
     } else {
         std.debug.print("No memory leaks!\n", .{});
+    }
+}
+
+fn create_random_obstacles(
+    array: *std.ArrayList(Obstacle),
+    rand: std.Random,
+    amount: usize,
+    max_width: f32,
+    max_height: f32,
+) !void {
+    array.clearAndFree();
+
+    var temp_obstacle: Obstacle = Obstacle{
+        .pos = rl.Vector2.init(0, 0),
+        .size = rl.Vector2.init(0, 0),
+    };
+    for (0..amount) |_| {
+        temp_obstacle = Obstacle{
+            .pos = rl.Vector2.init(
+                rand.float(f32) * max_width,
+                rand.float(f32) * max_height,
+            ),
+            .size = rl.Vector2.init(
+                rand.float(f32) * 100 + 20,
+                rand.float(f32) * 100 + 20,
+            ),
+        };
+        try array.append(temp_obstacle);
     }
 }
