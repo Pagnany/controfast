@@ -249,7 +249,7 @@ fn check_obstacle_collision(
     obstacles: std.ArrayList(Obstacle),
 ) bool {
     for (obstacles.items) |obstacle| {
-        if (check_collision_circle_rect(player_pos, player_size.x, obstacle.pos, obstacle.size)) {
+        if (check_collision_circle_rect(player_pos, player_size.x / 2, obstacle.pos, obstacle.size)) {
             return true;
         }
     }
