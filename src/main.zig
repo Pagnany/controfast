@@ -86,7 +86,7 @@ pub fn main() !void {
         try create_random_obstacles(&obstacles, rand, 30, screenWidth, screenHeight);
 
         // Main game loop
-        while (!rl.windowShouldClose()) { // Detect window close button or ESC key
+        while (!rl.windowShouldClose()) {
             const loop_time = rl.getTime();
             const delta_time: f32 = @as(f32, @floatCast(loop_time)) - @as(f32, @floatCast(prev_loop_time));
             mouse_pos = rl.getMousePosition().multiply(rl.getWindowScaleDPI());
@@ -124,6 +124,7 @@ pub fn main() !void {
             }
             // Facebutton
             if (rl.isGamepadButtonPressed(gamepad_id, .right_face_down)) {
+                // DEBUG reset obstacles
                 try create_random_obstacles(&obstacles, rand, 30, screenWidth, screenHeight);
             }
 
@@ -224,22 +225,19 @@ fn create_random_obstacles(
 ) !void {
     array.clearAndFree();
 
-    var temp_obstacle: Obstacle = Obstacle{
-        .pos = rl.Vector2.init(0, 0),
-        .size = rl.Vector2.init(0, 0),
-    };
     for (0..amount) |_| {
-        temp_obstacle = Obstacle{
-            .pos = rl.Vector2.init(
-                rand.float(f32) * max_width,
-                rand.float(f32) * max_height,
-            ),
-            .size = rl.Vector2.init(
-                rand.float(f32) * 100 + 20,
-                rand.float(f32) * 100 + 20,
-            ),
-        };
-        try array.append(temp_obstacle);
+        try array.append(
+            Obstacle{
+                .pos = rl.Vector2.init(
+                    rand.float(f32) * max_width,
+                    rand.float(f32) * max_height,
+                ),
+                .size = rl.Vector2.init(
+                    rand.float(f32) * 100 + 20,
+                    rand.float(f32) * 100 + 20,
+                ),
+            },
+        );
     }
 }
 
