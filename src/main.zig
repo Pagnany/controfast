@@ -21,16 +21,18 @@ const Obstacle = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
+    var dba: std.heap.DebugAllocator(.{}) = .init;
+    const allocator = dba.allocator();
 
     {
         // Random number generator
-        var prng = std.Random.DefaultPrng.init(blk: {
-            var seed: u64 = undefined;
-            try std.posix.getrandom(std.mem.asBytes(&seed));
-            break :blk seed;
-        });
+        var prng = std.Random.DefaultPrng.init(
+            blk: {
+                var seed: u64 = undefined;
+                try std.posix.getrandom(std.mem.asBytes(&seed));
+                break :blk seed;
+            },
+        );
         const rand = prng.random();
 
         // ---- WINDOW SETUP ----
@@ -40,7 +42,6 @@ pub fn main() !void {
         rl.setConfigFlags(.{
             .window_highdpi = true,
             .vsync_hint = true,
-            .msaa_4x_hint = true,
         });
 
         rl.initWindow(screenWidth, screenHeight, "Controfast");
@@ -49,10 +50,8 @@ pub fn main() !void {
 
         // ---- TEXTURES ----
         // Player01
-        const img_player01 = try rl.loadImage("resources/player01.png");
-        const texture_player01 = try rl.loadTextureFromImage(img_player01);
+        const texture_player01 = try rl.loadTexture("resources/player01.png");
         defer rl.unloadTexture(texture_player01);
-        rl.unloadImage(img_player01);
         // ---- END TEXTURES ----
 
         // Gamepad
@@ -209,7 +208,7 @@ pub fn main() !void {
     }
 
     // Check for leaks
-    if (gpa.deinit() == .leak) {
+    if (dba.deinit() == .leak) {
         std.debug.print("Memory leak detected!\n", .{});
     } else {
         std.debug.print("No memory leaks!\n", .{});
